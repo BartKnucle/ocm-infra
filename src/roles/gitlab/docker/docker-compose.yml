@@ -1,0 +1,40 @@
+version: '3.5'
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    container_name: gitlab
+    restart: always
+    hostname: '${HOSTNAME}'
+    environment:
+      GITLAB_ROOT_PASSWORD: ${PASS}
+      GITLAB_SHARED_RUNNERS_REGISTRATION_TOKEN: ${TOKEN}
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '${URL}'
+        gitlab_rails['monitoring_whitelist'] = ['127.0.0.0/8', '192.168.0.1']
+        # Add any other gitlab.rb configuration here, each on its own line
+    ports:
+      - '80:80'
+      - '443:443'
+      - '22:22'
+    volumes:
+      - '/srv/gitlab/config:/etc/gitlab'
+      - '/srv/gitlab/logs:/var/log/gitlab' 
+      - '/srv/gitlab/data:/var/opt/gitlab'
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitlab
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: unless-stopped
+    depends_on:
+      - gitlab
+    volumes:
+      #- ./config/gitlab-runner:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitlab
+
+networks:
+  gitlab:

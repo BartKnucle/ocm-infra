@@ -1,6 +1,8 @@
 Install docker
-Windows: 
-Linux: 
+- Windows: 
+- Linux: 
+
+Share the filesystem in docker
 
 Configure you .env file
 

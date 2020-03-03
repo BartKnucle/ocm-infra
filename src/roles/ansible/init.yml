@@ -1,0 +1,9 @@
+---
+  - name: "Setting up ansible"
+    hosts: localhost
+    tasks:   
+    - name: Install python packages
+      pip:
+        name:
+          - docker
+          - docker-compose

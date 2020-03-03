@@ -1,0 +1,44 @@
+---
+  - name: "Setting up gitlab"
+    hosts: localhost
+    tasks:
+    - name: Install python packages
+      pip:
+        name:
+          - python-gitlab<1.12.1 # Bug https://github.com/ansible/ansible/issues/64770
+
+    - name: Set gitlab container
+      docker_compose:
+        project_name: ocm-infra
+        project_src: docker
+        state: present
+
+    - name: "wait for Gitlab to come up"
+      uri:
+        url: "http://gitlab/-/readiness?token=-4BmjzZrs3xUi3Wombon"
+        status_code: 200
+      register: result
+      until: result.json.status == 'ok'
+      retries: 60
+      delay: 60
+
+    - name: "Register runner"
+      gitlab_runner:
+        api_url: http://gitlab/
+        api_token: aFB1Z6YhZdweUuL2VeQq
+        registration_token: ChangeToken!
+        description: Docker Machine t1
+        state: present
+        active: True
+        tag_list: ['test']
+        run_untagged: False
+        locked: False
+
+    - name: Set gitlab default projects
+      gitlab_project:
+        api_url: http://gitlab
+        api_token : aFB1Z6YhZdweUuL2VeQq
+        name: ocs-server
+        state: present
+        import_url: https://github.com/BartKnucle/ocs-server.git
+      delegate_to: localhost

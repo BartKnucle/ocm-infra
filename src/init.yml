@@ -1,0 +1,7 @@
+- hosts: localhost
+
+- name: Ansible init
+  import_playbook: roles/ansible/init.yml
+
+- name: Gitlab init
+  import_playbook: roles/gitlab/init.yml
