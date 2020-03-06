@@ -10,5 +10,5 @@ RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubunt
 RUN apt-get update
 #Install ansible packages and used librairies
 RUN apt-get install -y ansible python-pip docker-ce-cli
-#CMD [ "ansible-playbook", "src/init.yml" ]
-CMD /usr/local/bin/shell.sh ; sleep infinity
+CMD [ "ansible-playbook", "src/init.yml" ]
+#CMD /usr/local/bin/shell.sh ; sleep infinity
