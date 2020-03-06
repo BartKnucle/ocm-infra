@@ -1,3 +1,5 @@
+
+
 version: '3.5'
 services:
   gitlab:
@@ -10,7 +12,7 @@ services:
       GITLAB_SHARED_RUNNERS_REGISTRATION_TOKEN: ${TOKEN}
       GITLAB_OMNIBUS_CONFIG: |
         external_url '${URL}'
-        gitlab_rails['monitoring_whitelist'] = ['127.0.0.0/8', '192.168.0.1']
+        gitlab_rails['monitoring_whitelist'] = ['172.23.0.0/16', '192.168.0.1']
         # Add any other gitlab.rb configuration here, each on its own line
     ports:
       - '80:80'
@@ -25,8 +27,10 @@ services:
       - gitlab
 
   gitlab-runner:
-    image: gitlab/gitlab-runner:latest
     container_name: gitlab-runner
+    build: 
+      context: .
+      dockerfile: gitlab-runner.dockerfile
     restart: unless-stopped
     depends_on:
       - gitlab

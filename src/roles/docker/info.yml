@@ -1,0 +1,38 @@
+---
+  - name: "Playing with Ansible and Git"
+    hosts: localhost
+    connection: local 
+    tasks:
+
+    - name: Get info on docker host
+      docker_host_info:
+      register: result
+
+    - debug: var=result
+
+  - name: Print information about container
+    hosts: localhost
+    tasks:
+      - name: Get infos on container
+        docker_container_info:
+          name: ansible
+        register: result
+
+      - name: Print information about container
+        debug:
+          var: result.container.NetworkSettings.Networks.ocm-infra_gitlab
+        when: result.exists
+
+  - name: Get infos on network
+    docker_network_info:
+      name: gitlab
+    register: result
+
+  - name: Does network exist?
+    debug:
+      msg: "The network {{ 'exists' if result.exists else 'does not exist' }}"
+
+  - name: Print information about network
+    debug:
+      var: result.network
+    when: result.exists

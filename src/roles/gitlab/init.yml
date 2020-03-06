@@ -5,39 +5,72 @@
     - name: Install python packages
       pip:
         name:
-          - python-gitlab<1.12.1 # Bug https://github.com/ansible/ansible/issues/64770
+          - python-gitlab<1.12.1 # Bug https://github.com/ansible/ansible/issues/64770 library used to manage gitlab from ansible
 
-    - name: Set gitlab container
+    - name: "Set gitlab container" # Docker compose the gitlab and gitlab-runner container 
       docker_compose:
         project_name: ocm-infra
         project_src: docker
         state: present
+        build: yes
 
-    - name: "wait for Gitlab to come up"
+    - name: add gitlab container to inventory # Add the gitlab container to the inventory
+      add_host:
+        name: gitlab
+        ansible_connection: docker
+      changed_when: false
+    
+    - name: add gitlab-runner container to inventory # Add the gitlab-runner container to the inventory
+      add_host:
+        name: gitlab-runner
+        ansible_connection: docker
+      changed_when: false
+
+    - name: Install python librairies to the gitlab containers
+      delegate_to: gitlab-runner
+      pip:
+        name:
+          - python-gitlab<1.12.1 # Bug https://github.com/ansible/ansible/issues/64770 library used to manage gitlab from ansible
+
+    - name: "wait for Gitlab to come up" # Wait for the gitlab readiness api to be ok
       uri:
-        url: "http://gitlab/-/readiness?token=-4BmjzZrs3xUi3Wombon"
-        status_code: 200
+        url: "http://gitlab/-/readiness"
       register: result
-      until: result.json.status == 'ok'
+      until: result.status == 200 and result.json.status == 'ok'
       retries: 60
       delay: 60
 
-    - name: "Register runner"
-      gitlab_runner:
-        api_url: http://gitlab/
-        api_token: aFB1Z6YhZdweUuL2VeQq
-        registration_token: ChangeToken!
-        description: Docker Machine t1
-        state: present
-        active: True
-        tag_list: ['test']
-        run_untagged: False
-        locked: False
+    - name: generate api token for root user # Generate a token for the root user to use the gitlab api
+      command: 'docker exec gitlab gitlab-rails runner -e production "{{ generate_api_token_command }}"'
+      register: command_result
+      vars:
+        generate_api_token_command: "token_digest = Gitlab::CryptoHelper.sha256 '1234567890';token=PersonalAccessToken.create!(name: 'Full Access', scopes: [:api], user: User.where(id: 1).first, token_digest: token_digest);token.save!"
+      failed_when: "not 'duplicate key value violates unique constraint' in command_result.stderr"
+
+    - name: List configured runners
+      delegate_to: gitlab-runner
+      command: gitlab-runner list
+      register: configured_runners
+      changed_when: False
+
+    - name: Register runner to GitLab
+      delegate_to: gitlab-runner
+      command: gitlab-runner register >
+        --non-interactive
+        --url 'http://gitlab/'
+        --clone-url 'http://gitlab/'
+        --docker-network-mode 'ocm-infra_gitlab'
+        --registration-token 'ChangeToken!'
+        --description 'ocs-server test'
+        --tag-list 'test'
+        --executor 'docker'
+        --docker-image 'node:12.13.1'
+      when: configured_runners.stderr.find('ocs-server test') == -1
 
     - name: Set gitlab default projects
       gitlab_project:
         api_url: http://gitlab
-        api_token : aFB1Z6YhZdweUuL2VeQq
+        api_token : '1234567890'
         name: ocs-server
         state: present
         import_url: https://github.com/BartKnucle/ocs-server.git

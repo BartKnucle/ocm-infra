@@ -1,5 +1,10 @@
 - hosts: localhost
 
+#- name: debug
+#  hosts: localhost
+#  tasks:
+#    - debug: var=ansible_facts
+
 - name: Ansible init
   import_playbook: roles/ansible/init.yml
 
