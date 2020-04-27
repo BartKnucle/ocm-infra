@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:bionic
 #Add common packages
 RUN apt-get update && apt-get install -y software-properties-common curl
 #Add ansible PPA
